@@ -5,95 +5,109 @@ import com.aluracursos.coinconverter.models.ExchangeRate;
 import com.aluracursos.coinconverter.models.HttpMethods;
 import com.aluracursos.coinconverter.models.WrongInputManager;
 
+import java.util.Objects;
 import java.util.Scanner;
 
 public class Main {
     public static void main(String[] args) {
-        var httpMethods = new HttpMethods();
-        var scanner = new Scanner(System.in);
-        var wrongInputManager = new WrongInputManager();
-        var option = 0;
-        double amount = 0;
-        ExchangeRate getResponse;
-        Converter converter;
+        HttpMethods httpMethods = new HttpMethods();
+        Scanner scanner = new Scanner(System.in);
+        WrongInputManager wrongInputManager = new WrongInputManager();
 
-        System.out.println("\nBienvenido/a al Conversor de Moneda\n");
+        int option = 0;
+        double amount = 0;
+        boolean defaultOption = false;
+        var baseCoin = "";
+        var targetCoin = "";
+
+
+        System.out.println("\nBienvenido/a al Conversor de Monedas\n");
         try {
-            while (option != 8){
+            while (option != 6){
                 System.out.println("""
                         *************************************
-                        
                         1) Dolar[USD] ==> Peso Argentino[ARS]
                         2) Peso Argentino[ARS] ==> Dolar[USD]
                         3) Euro[EUR] ==> Peso Argentino[ARS]
                         4) Peso Argentino[ARS] ==> Euro[EUR]
-                        5) Dolar[USD] ==> Euro[EUR]
-                        6) Dolar[USD] ==> Libra Esterlina[GBP]
-                        7) Euro[EUR] ==> Libra Esterlina[GBP]
-                        8) Salir
-                        
+                        5) Sleccionar otras monedas
+                        6) Salir
                         *************************************
                         """);
 
                 System.out.println("Elija una pocion valida:");
                 var inputScanner = scanner.next();
 
-                if(wrongInputManager.option(inputScanner)){
-                    option = Integer.parseInt(inputScanner);
-                    if (option != 8){
-                        System.out.println("Ingrese el valor que desa convertir:");
-                        inputScanner = scanner.next();
-                        if (wrongInputManager.amount(inputScanner)){
-                            amount = Double.parseDouble(inputScanner);
+                if(wrongInputManager.readOption(inputScanner)){  //Verifica que la opcion ingresada por el usuario sea correcta
+                    option = Integer.parseInt(inputScanner);     //Seteo la variable option si la opcion ingresada por el usuario es valida
+                    if (option != 6){                            //Si la opcion ingresada es el 6 me salteo todo el codigo del if
+                        if (option == 5){
+                            var stopWhile = false;
+                            while(!stopWhile){
+                                System.out.println("Ingrese el codio de la moneda base que desea convertir:");
+                                baseCoin = scanner.next();
+                                if (wrongInputManager.readCoin(baseCoin)){
+                                    stopWhile = true;
+                                }
+                            }
                         }
-                        else {
-                            option = 0;
+                        var stopWhile = true;
+                        while (stopWhile){
+                            System.out.println("Ingrese el valor que desa convertir:");
+                            inputScanner = scanner.next();
+                            if (wrongInputManager.readAmount(inputScanner)){
+                                amount = Double.parseDouble(inputScanner);
+                                stopWhile = false;
+                            }
                         }
+
                     }
                 }
 
                 switch (option){
                     case 1:
-                        getResponse = httpMethods.get("USD", "ARS", amount);
-                        converter = new Converter(getResponse);
-                        System.out.println(converter.convert(amount));
+                        baseCoin = "USD";
+                        targetCoin = "ARS";
                         break;
                     case 2:
-                        getResponse = httpMethods.get("ARS", "USD", amount);
-                        converter = new Converter(getResponse);
-                        System.out.println(converter.convert(amount));
+                        baseCoin = "ARS";
+                        targetCoin = "USD";
                         break;
                     case 3:
-                        getResponse = httpMethods.get("EUR", "ARS", amount);
-                        converter = new Converter(getResponse);
-                        System.out.println(converter.convert(amount));
+                        baseCoin = "EUR";
+                        targetCoin = "ARS";
                         break;
                     case 4:
-                        getResponse = httpMethods.get("ARS", "EUR", amount);
-                        converter = new Converter(getResponse);
-                        System.out.println(converter.convert(amount));
+                        baseCoin = "ARS";
+                        targetCoin = "EUR";
                         break;
                     case 5:
-                        getResponse = httpMethods.get("USD", "EUR", amount);
-                        converter = new Converter(getResponse);
-                        System.out.println(converter.convert(amount));
+                        var stopWhile = false;
+                        while(!stopWhile){
+                            System.out.println("Ingrese el codio de la moneda objetivo:");
+                            targetCoin = scanner.next();
+                            if (wrongInputManager.readCoin(targetCoin)){
+                                stopWhile = true;
+                            }
+                        }
                         break;
                     case 6:
-                        getResponse = httpMethods.get("USD", "GBP", amount);
-                        converter = new Converter(getResponse);
-                        System.out.println(converter.convert(amount));
-                        break;
-                    case 7:
-                        getResponse = httpMethods.get("EUR", "GBP", amount);
-                        converter = new Converter(getResponse);
-                        System.out.println(converter.convert(amount));
-                        break;
-                    case 8:
-                        System.out.println("\n¡Gracias por utilizar este conversor de moneda!");
+                        System.out.println("\n¡Gracias por utilizar este conversor de monedas!");
                         System.out.println("\nFinalizando programa...");
                         break;
                     default:
-                        System.out.println("La opcion ingreada es incorrecta. Por favor intentelo de nuevo.");
+                        System.out.println("La opcion ingreada es incorrecta. Por favor intentelo de nuevo.\n");
+                        defaultOption = true;
+                }
+
+                if (option != 6 & !defaultOption){
+                    ExchangeRate getResponse = httpMethods.get(baseCoin, targetCoin, amount);
+                    if (Objects.equals(getResponse.result(), "error")){
+                        System.out.println("\nError: " + getResponse.errorType() + "\n");
+                    } else {
+                        Converter converter = new Converter(getResponse);
+                        System.out.println(converter.convert(amount));
+                    }
                 }
             }
         }catch (RuntimeException e){
