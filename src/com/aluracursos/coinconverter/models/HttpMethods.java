@@ -21,6 +21,7 @@ public class HttpMethods {
                     .build();
             HttpResponse<String> response = client
                     .send(request, HttpResponse.BodyHandlers.ofString());
+
             return new Gson().fromJson(response.body(), ExchangeRate.class);
         }catch (Exception e){
             throw new RuntimeException(e.getMessage());
